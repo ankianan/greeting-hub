@@ -70,7 +70,10 @@ const Index = () => {
         (payload) => {
           const newGame = payload.new as any;
           setCurrentGame(newGame);
-          if (newGame?.status === "guessing") {
+          if (newGame?.status === "active") {
+            setGameView("playing");
+            setTimeRemaining(60);
+          } else if (newGame?.status === "guessing") {
             setGameView("guessing");
           }
         }
