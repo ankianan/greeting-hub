@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function Auth() {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,6 +28,7 @@ export default function Auth() {
         });
         if (error) throw error;
         toast.success("Logged in successfully!");
+        navigate("/");
       } else {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
@@ -41,6 +44,7 @@ export default function Auth() {
         }
 
         toast.success("Account created successfully!");
+        navigate("/");
       }
     } catch (error: any) {
       toast.error(error.message);

@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [joinCode, setJoinCode] = useState("");
   const [gameView, setGameView] = useState<"menu" | "create" | "join" | "playing" | "guessing">("menu");
   const [profile, setProfile] = useState<{ name: string } | null>(null);
@@ -25,6 +25,12 @@ const Index = () => {
   const [selectedGuess, setSelectedGuess] = useState<string>("");
   
   const gameHook = useGame(user?.id || "");
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -228,8 +234,15 @@ const Index = () => {
       .eq("id", currentGame.id);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
   if (!user) {
-    navigate("/auth");
     return null;
   }
 
