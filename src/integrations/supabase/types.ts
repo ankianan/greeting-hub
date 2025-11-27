@@ -174,6 +174,10 @@ export type Database = {
     }
     Functions: {
       generate_join_code: { Args: never; Returns: string }
+      increment: {
+        Args: { game_id: string; row_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
