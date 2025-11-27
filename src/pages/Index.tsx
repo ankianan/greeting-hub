@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StoneCircle } from "@/components/StoneCircle";
@@ -26,6 +26,18 @@ const Index = () => {
   
   const gameHook = useGame(user?.id || "");
 
+  const loadParticipants = useCallback(async (gameId: string) => {
+    const { data } = await supabase
+      .from("game_participants")
+      .select(`
+        user_id,
+        profiles (name)
+      `)
+      .eq("game_id", gameId);
+
+    setParticipants(data || []);
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
@@ -41,15 +53,19 @@ const Index = () => {
   useEffect(() => {
     if (!currentGame?.id) return;
 
+    const gameId = currentGame.id;
+    
+    loadParticipants(gameId);
+
     const channel = supabase
-      .channel(`game:${currentGame.id}`)
+      .channel(`game:${gameId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "games",
-          filter: `id=eq.${currentGame.id}`,
+          filter: `id=eq.${gameId}`,
         },
         (payload) => {
           const newGame = payload.new as any;
@@ -65,10 +81,10 @@ const Index = () => {
           event: "*",
           schema: "public",
           table: "game_participants",
-          filter: `game_id=eq.${currentGame.id}`,
+          filter: `game_id=eq.${gameId}`,
         },
         () => {
-          loadParticipants();
+          loadParticipants(gameId);
         }
       )
       .subscribe();
@@ -76,7 +92,7 @@ const Index = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentGame?.id]);
+  }, [currentGame?.id, loadParticipants]);
 
   useEffect(() => {
     if (gameView === "playing" && currentGame?.status === "active") {
@@ -104,25 +120,11 @@ const Index = () => {
     setProfile(data);
   };
 
-  const loadParticipants = async () => {
-    if (!currentGame?.id) return;
-    const { data } = await supabase
-      .from("game_participants")
-      .select(`
-        user_id,
-        profiles (name)
-      `)
-      .eq("game_id", currentGame.id);
-
-    setParticipants(data || []);
-  };
-
   const handleCreateGame = async () => {
     try {
       const game = await gameHook.createGame();
       setCurrentGame(game);
       setGameView("create");
-      loadParticipants();
       toast.success(`Game created! Code: ${game.join_code}`);
     } catch (error: any) {
       toast.error(error.message);
@@ -133,8 +135,7 @@ const Index = () => {
     try {
       const game = await gameHook.joinGame(joinCode);
       setCurrentGame(game);
-      await loadParticipants();
-      setGameView("playing");
+      setGameView("create");
       toast.success("Joined game successfully!");
     } catch (error: any) {
       toast.error("Failed to join game");
