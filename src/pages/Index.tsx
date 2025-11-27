@@ -327,13 +327,20 @@ const Index = () => {
                 </div>
               </div>
 
-              <Button
-                onClick={handleStartGame}
-                disabled={participants.length < 2}
-                className="w-full"
-              >
-                Start Game ({participants.length} players)
-              </Button>
+              {currentGame?.creator_id === user?.id && (
+                <Button
+                  onClick={handleStartGame}
+                  disabled={participants.length < 2}
+                  className="w-full"
+                >
+                  Start Game ({participants.length} players)
+                </Button>
+              )}
+              {currentGame?.creator_id !== user?.id && (
+                <p className="text-center text-muted-foreground">
+                  Waiting for host to start the game...
+                </p>
+              )}
 
               <Button onClick={() => setGameView("menu")} variant="outline" className="w-full">
                 Cancel
@@ -382,11 +389,6 @@ const Index = () => {
           <p className="text-2xl font-bold text-primary">
             Time: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, "0")}
           </p>
-          <p className="text-muted-foreground">
-            {currentGame?.current_holder_id === user?.id
-              ? "You have the stone"
-              : `${participants.find((p) => p.user_id === currentGame?.current_holder_id)?.profiles?.name} has the stone`}
-          </p>
         </div>
 
         <div className="flex flex-col items-center gap-8">
@@ -417,7 +419,7 @@ const Index = () => {
               id: p.user_id,
               name: p.profiles?.name,
             }))}
-            currentHolderId={currentGame?.current_holder_id || ""}
+            currentHolderId=""
           />
         </div>
       </div>
