@@ -23,7 +23,7 @@ const Index = () => {
   const [currentGame, setCurrentGame] = useState<any>(null);
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [selectedGuess, setSelectedGuess] = useState<string>("");
-  const [lastAction, setLastAction] = useState<{ direction: "next" | "previous"; to: string } | null>(null);
+  const [lastAction, setLastAction] = useState<{ direction: "next" | "previous" | "toss" | "claim"; to?: string } | null>(null);
   const [lastStatus, setLastStatus] = useState<string | null>(null);
   
   const gameHook = useGame(user?.id || "");
@@ -183,6 +183,21 @@ const Index = () => {
     const nextHolder = participants[nextIndex];
     await gameHook.passStone(currentGame.id, nextHolder.user_id);
     setLastAction({ direction, to: nextHolder.user_id });
+  };
+
+  const handleTossStone = async () => {
+    if (!currentGame) return;
+    await supabase
+      .from("games")
+      .update({ current_holder_id: null })
+      .eq("id", currentGame.id);
+    setLastAction({ direction: "toss" });
+  };
+
+  const handleClaimStone = async () => {
+    if (!currentGame || !user) return;
+    await gameHook.passStone(currentGame.id, user.id);
+    setLastAction({ direction: "claim" });
   };
 
   const endGame = async () => {
@@ -408,29 +423,50 @@ const Index = () => {
         <div className="flex flex-col items-center gap-8">
           <StoneCircle hasStone={currentGame?.current_holder_id === user?.id} />
 
-          <div className="flex gap-4">
-            <Button
-              onClick={() => handlePassStone("previous")}
-              disabled={currentGame?.current_holder_id !== user?.id}
-              size="lg"
-              variant="outline"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Previous
-            </Button>
-            <Button
-              onClick={() => handlePassStone("next")}
-              disabled={currentGame?.current_holder_id !== user?.id}
-              size="lg"
-            >
-              Next
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </div>
+          {currentGame?.current_holder_id === null ? (
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-lg text-muted-foreground">The stone is up for grabs!</p>
+              <Button onClick={handleClaimStone} size="lg">
+                Claim Stone
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <Button
+                onClick={() => handlePassStone("previous")}
+                disabled={currentGame?.current_holder_id !== user?.id}
+                size="lg"
+                variant="outline"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Previous
+              </Button>
+              <Button
+                onClick={handleTossStone}
+                disabled={currentGame?.current_holder_id !== user?.id}
+                size="lg"
+                variant="secondary"
+              >
+                Toss
+              </Button>
+              <Button
+                onClick={() => handlePassStone("next")}
+                disabled={currentGame?.current_holder_id !== user?.id}
+                size="lg"
+              >
+                Next
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </div>
+          )}
 
           {lastAction && (
             <p className="text-sm text-muted-foreground">
-              Last action: Passed {lastAction.direction} to {participants.find(p => p.user_id === lastAction.to)?.profiles?.name}
+              Last action: {lastAction.direction === "toss" 
+                ? "Tossed the stone" 
+                : lastAction.direction === "claim" 
+                  ? "Claimed the stone" 
+                  : `Passed ${lastAction.direction} to ${participants.find(p => p.user_id === lastAction.to)?.profiles?.name}`}
             </p>
           )}
 
