@@ -25,6 +25,7 @@ const Index = () => {
   const [selectedGuess, setSelectedGuess] = useState<string>("");
   const [lastAction, setLastAction] = useState<{ direction: "next" | "previous" | "toss" | "claim"; to?: string } | null>(null);
   const [lastStatus, setLastStatus] = useState<string | null>(null);
+  const [stoneExitDirection, setStoneExitDirection] = useState<"left" | "right" | null>(null);
   
   const gameHook = useGame(user?.id || "");
 
@@ -173,6 +174,8 @@ const Index = () => {
   const handlePassStone = async (direction: "next" | "previous") => {
     if (!currentGame || !participants.length) return;
 
+    setStoneExitDirection(direction === "next" ? "right" : "left");
+
     const currentIndex = participants.findIndex(
       (p) => p.user_id === currentGame.current_holder_id
     );
@@ -183,10 +186,13 @@ const Index = () => {
     const nextHolder = participants[nextIndex];
     await gameHook.passStone(currentGame.id, nextHolder.user_id);
     setLastAction({ direction, to: nextHolder.user_id });
+    
+    setTimeout(() => setStoneExitDirection(null), 500);
   };
 
   const handleTossStone = async () => {
     if (!currentGame) return;
+    setStoneExitDirection(null);
     await supabase
       .from("games")
       .update({ current_holder_id: null })
@@ -196,6 +202,7 @@ const Index = () => {
 
   const handleClaimStone = async () => {
     if (!currentGame || !user) return;
+    setStoneExitDirection(null);
     await gameHook.passStone(currentGame.id, user.id);
     setLastAction({ direction: "claim" });
   };
@@ -421,7 +428,11 @@ const Index = () => {
         </div>
 
         <div className="flex flex-col items-center gap-8">
-          <StoneCircle hasStone={currentGame?.current_holder_id === user?.id} />
+          <StoneCircle 
+            hasStone={currentGame?.current_holder_id === user?.id} 
+            isFloating={currentGame?.current_holder_id === null}
+            exitDirection={stoneExitDirection}
+          />
 
           {currentGame?.current_holder_id === null ? (
             <div className="flex flex-col items-center gap-4">
