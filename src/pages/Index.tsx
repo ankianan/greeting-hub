@@ -24,6 +24,7 @@ const Index = () => {
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [selectedGuess, setSelectedGuess] = useState<string>("");
   const [lastAction, setLastAction] = useState<{ direction: "next" | "previous"; to: string } | null>(null);
+  const [lastStatus, setLastStatus] = useState<string | null>(null);
   
   const gameHook = useGame(user?.id || "");
 
@@ -71,13 +72,20 @@ const Index = () => {
         (payload) => {
           const newGame = payload.new as any;
           setCurrentGame(newGame);
-          if (newGame?.status === "active" && gameView !== "playing") {
-            setGameView("playing");
-            setTimeRemaining(60);
-            setLastAction(null);
-          } else if (newGame?.status === "guessing") {
-            setGameView("guessing");
-          }
+          setLastStatus((prev) => {
+            const wasActive = prev === "active";
+            const isActive = newGame?.status === "active";
+
+            if (!wasActive && isActive) {
+              setGameView("playing");
+              setTimeRemaining(60);
+              setLastAction(null);
+            } else if (newGame?.status === "guessing") {
+              setGameView("guessing");
+            }
+
+            return newGame?.status ?? prev;
+          });
         }
       )
       .on(
