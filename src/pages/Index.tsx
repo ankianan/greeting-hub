@@ -17,7 +17,8 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, loading, signOut } = useAuth();
   const [joinCode, setJoinCode] = useState("");
-  const [gameView, setGameView] = useState<"menu" | "create" | "join" | "playing" | "guessing">("menu");
+const [gameView, setGameView] = useState<"menu" | "create" | "join" | "playing" | "guessing" | "results">("menu");
+  const [guessResult, setGuessResult] = useState<{ isCorrect: boolean; actualHolder: string } | null>(null);
   const [profile, setProfile] = useState<{ name: string } | null>(null);
   const [participants, setParticipants] = useState<any[]>([]);
   const [currentGame, setCurrentGame] = useState<any>(null);
@@ -224,6 +225,12 @@ const Index = () => {
     try {
       await gameHook.submitGuess(currentGame.id, selectedGuess);
       
+      const isCorrect = selectedGuess === currentGame.current_holder_id;
+      const actualHolder = participants.find(p => p.user_id === currentGame.current_holder_id)?.profiles?.name || "Unknown";
+      
+      setGuessResult({ isCorrect, actualHolder });
+      setGameView("results");
+      
       const { data: guesses } = await supabase
         .from("game_guesses")
         .select()
@@ -232,10 +239,6 @@ const Index = () => {
       if (guesses && guesses.length === participants.length) {
         await calculateScores();
       }
-
-      toast.success("Guess submitted!");
-      setGameView("menu");
-      setCurrentGame(null);
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -380,6 +383,40 @@ const Index = () => {
 
               <Button onClick={() => setGameView("menu")} variant="outline" className="w-full">
                 Cancel
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameView === "results") {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-4xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center">
+                {guessResult?.isCorrect ? "🎉 Correct!" : "❌ Wrong!"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6 text-center">
+              <p className="text-2xl">
+                {guessResult?.isCorrect 
+                  ? "You guessed correctly!" 
+                  : `The stone was with ${guessResult?.actualHolder}`}
+              </p>
+              <Button 
+                onClick={() => {
+                  setGameView("menu");
+                  setCurrentGame(null);
+                  setGuessResult(null);
+                  setSelectedGuess("");
+                }} 
+                className="w-full"
+              >
+                Back to Menu
               </Button>
             </CardContent>
           </Card>
