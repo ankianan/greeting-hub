@@ -23,6 +23,7 @@ const Index = () => {
   const [currentGame, setCurrentGame] = useState<any>(null);
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [selectedGuess, setSelectedGuess] = useState<string>("");
+  const [lastAction, setLastAction] = useState<{ direction: "next" | "previous"; to: string } | null>(null);
   
   const gameHook = useGame(user?.id || "");
 
@@ -70,9 +71,10 @@ const Index = () => {
         (payload) => {
           const newGame = payload.new as any;
           setCurrentGame(newGame);
-          if (newGame?.status === "active") {
+          if (newGame?.status === "active" && gameView !== "playing") {
             setGameView("playing");
             setTimeRemaining(60);
+            setLastAction(null);
           } else if (newGame?.status === "guessing") {
             setGameView("guessing");
           }
@@ -172,6 +174,7 @@ const Index = () => {
 
     const nextHolder = participants[nextIndex];
     await gameHook.passStone(currentGame.id, nextHolder.user_id);
+    setLastAction({ direction, to: nextHolder.user_id });
   };
 
   const endGame = async () => {
@@ -416,6 +419,12 @@ const Index = () => {
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
+
+          {lastAction && (
+            <p className="text-sm text-muted-foreground">
+              Last action: Passed {lastAction.direction} to {participants.find(p => p.user_id === lastAction.to)?.profiles?.name}
+            </p>
+          )}
 
           <ParticipantList
             participants={participants.map((p: any) => ({
