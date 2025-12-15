@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { StoneCircle } from "@/components/StoneCircle";
+import { SwipeableStone } from "@/components/SwipeableStone";
 import { ParticipantList } from "@/components/ParticipantList";
-import { ArrowLeft, ArrowRight, LogOut, History } from "lucide-react";
-import { motion } from "framer-motion";
+import { EducationScreen } from "@/components/EducationScreen";
+import { LogOut, History } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +17,11 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, loading, signOut } = useAuth();
   const [joinCode, setJoinCode] = useState("");
-const [gameView, setGameView] = useState<"menu" | "create" | "join" | "playing" | "guessing" | "results">("menu");
+const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education" | "playing" | "guessing" | "results">("menu");
   const [guessResult, setGuessResult] = useState<{ isCorrect: boolean; actualHolder: string } | null>(null);
+  const [hasSeenEducation, setHasSeenEducation] = useState(() => 
+    localStorage.getItem("hasSeenEducation") === "true"
+  );
   const [profile, setProfile] = useState<{ name: string } | null>(null);
   const [participants, setParticipants] = useState<any[]>([]);
   const [currentGame, setCurrentGame] = useState<any>(null);
@@ -164,7 +167,12 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "playing" 
       const firstParticipant = participants[0];
       await gameHook.passStone(currentGame.id, firstParticipant.user_id);
       
-      setGameView("playing");
+      // Show education screen if not seen before
+      if (!hasSeenEducation) {
+        setGameView("education");
+      } else {
+        setGameView("playing");
+      }
       setTimeRemaining(60);
       toast.success("Game started!");
     } catch (error: any) {
@@ -454,6 +462,19 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "playing" 
     );
   }
 
+  // Education screen
+  if (gameView === "education") {
+    return (
+      <EducationScreen
+        onComplete={() => {
+          setHasSeenEducation(true);
+          localStorage.setItem("hasSeenEducation", "true");
+          setGameView("playing");
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto">
@@ -465,48 +486,16 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "playing" 
         </div>
 
         <div className="flex flex-col items-center gap-8">
-          <StoneCircle 
-            hasStone={currentGame?.current_holder_id === user?.id} 
+          <SwipeableStone
+            hasStone={currentGame?.current_holder_id === user?.id}
             isFloating={currentGame?.current_holder_id === null}
             exitDirection={stoneExitDirection}
+            onSwipeLeft={() => handlePassStone("previous")}
+            onSwipeRight={() => handlePassStone("next")}
+            onSwipeUp={handleTossStone}
+            onClaim={handleClaimStone}
+            disabled={currentGame?.current_holder_id !== user?.id}
           />
-
-          {currentGame?.current_holder_id === null ? (
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-lg text-muted-foreground">The stone is up for grabs!</p>
-              <Button onClick={handleClaimStone} size="lg">
-                Claim Stone
-              </Button>
-            </div>
-          ) : (
-            <div className="flex gap-4">
-              <Button
-                onClick={() => handlePassStone("previous")}
-                disabled={currentGame?.current_holder_id !== user?.id}
-                size="lg"
-                variant="outline"
-              >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                Previous
-              </Button>
-              <Button
-                onClick={handleTossStone}
-                disabled={currentGame?.current_holder_id !== user?.id}
-                size="lg"
-                variant="secondary"
-              >
-                Toss
-              </Button>
-              <Button
-                onClick={() => handlePassStone("next")}
-                disabled={currentGame?.current_holder_id !== user?.id}
-                size="lg"
-              >
-                Next
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </div>
-          )}
 
           {lastAction && (
             <p className="text-sm text-muted-foreground">
