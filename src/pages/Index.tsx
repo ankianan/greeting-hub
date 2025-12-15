@@ -4,19 +4,21 @@ import { Input } from "@/components/ui/input";
 import { SwipeableStone } from "@/components/SwipeableStone";
 import { ParticipantList } from "@/components/ParticipantList";
 import { EducationScreen } from "@/components/EducationScreen";
-import { LogOut, History } from "lucide-react";
+import { LogOut, History, Share2, Copy, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading, signOut } = useAuth();
   const [joinCode, setJoinCode] = useState("");
+  const [copied, setCopied] = useState(false);
 const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education" | "playing" | "guessing" | "results">("menu");
   const [guessResult, setGuessResult] = useState<{ isCorrect: boolean; actualHolder: string } | null>(null);
   const [hasSeenEducation, setHasSeenEducation] = useState(() => 
@@ -54,8 +56,16 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
   useEffect(() => {
     if (user) {
       loadProfile();
+      
+      // Check for join code in URL
+      const codeFromUrl = searchParams.get("code");
+      if (codeFromUrl) {
+        setJoinCode(codeFromUrl.toUpperCase());
+        setSearchParams({});
+        setGameView("join");
+      }
     }
-  }, [user]);
+  }, [user, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!currentGame?.id) return;
@@ -360,7 +370,31 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
             <CardContent className="space-y-6">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground mb-2">Share this code:</p>
-                <p className="text-4xl font-bold tracking-wider">{currentGame?.join_code}</p>
+                <p className="text-4xl font-bold tracking-wider mb-4">{currentGame?.join_code}</p>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const shareUrl = `${window.location.origin}?code=${currentGame?.join_code}`;
+                    
+                    if (navigator.share) {
+                      navigator.share({
+                        title: "Join my game!",
+                        text: `Join my stone passing game with code: ${currentGame?.join_code}`,
+                        url: shareUrl,
+                      });
+                    } else {
+                      navigator.clipboard.writeText(shareUrl);
+                      setCopied(true);
+                      toast.success("Link copied!");
+                      setTimeout(() => setCopied(false), 2000);
+                    }
+                  }}
+                  className="gap-2"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                  {copied ? "Copied!" : "Share Link"}
+                </Button>
               </div>
 
               <div>
