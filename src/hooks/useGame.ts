@@ -30,13 +30,14 @@ export const useGame = (userId: string) => {
     timeRemaining: 60,
   });
 
-  const createGame = async () => {
+  const createGame = async (isPublic: boolean = false) => {
     const { data, error } = await supabase
       .from("games")
       .insert({
         creator_id: userId,
         join_code: await generateJoinCode(),
         status: "waiting",
+        is_public: isPublic,
       })
       .select()
       .single();
@@ -49,6 +50,22 @@ export const useGame = (userId: string) => {
     });
 
     return data;
+  };
+
+  const getPublicGames = async () => {
+    const { data, error } = await supabase
+      .from("games")
+      .select(`
+        *,
+        profiles!games_creator_id_fkey (name),
+        game_participants (user_id)
+      `)
+      .eq("is_public", true)
+      .eq("status", "waiting")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   };
 
   const joinGame = async (joinCode: string) => {
@@ -120,5 +137,6 @@ export const useGame = (userId: string) => {
     startGame,
     passStone,
     submitGuess,
+    getPublicGames,
   };
 };
