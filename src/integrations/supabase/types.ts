@@ -109,6 +109,7 @@ export type Database = {
           current_holder_id: string | null
           ended_at: string | null
           id: string
+          is_public: boolean
           join_code: string
           started_at: string | null
           status: string
@@ -119,6 +120,7 @@ export type Database = {
           current_holder_id?: string | null
           ended_at?: string | null
           id?: string
+          is_public?: boolean
           join_code: string
           started_at?: string | null
           status?: string
@@ -129,6 +131,7 @@ export type Database = {
           current_holder_id?: string | null
           ended_at?: string | null
           id?: string
+          is_public?: boolean
           join_code?: string
           started_at?: string | null
           status?: string

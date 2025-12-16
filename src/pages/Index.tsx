@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { SwipeableStone } from "@/components/SwipeableStone";
 import { ParticipantList } from "@/components/ParticipantList";
 import { EducationScreen } from "@/components/EducationScreen";
-import { LogOut, History, Share2, Check } from "lucide-react";
+import { LogOut, History, Share2, Check, Globe, Lock, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -32,6 +33,8 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
   const [lastAction, setLastAction] = useState<{ direction: "next" | "previous" | "toss" | "claim"; to?: string } | null>(null);
   const [lastStatus, setLastStatus] = useState<string | null>(null);
   const [stoneExitDirection, setStoneExitDirection] = useState<"left" | "right" | null>(null);
+  const [isPublicGame, setIsPublicGame] = useState(false);
+  const [publicGames, setPublicGames] = useState<any[]>([]);
   
   const gameHook = useGame(user?.id || "");
 
@@ -65,6 +68,7 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
   useEffect(() => {
     if (user) {
       loadProfile();
+      loadPublicGames();
       
       // Check for pending join code from URL
       const pendingCode = sessionStorage.getItem("pendingJoinCode");
@@ -75,6 +79,11 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
       }
     }
   }, [user]);
+
+  const loadPublicGames = async () => {
+    const games = await gameHook.getPublicGames();
+    setPublicGames(games);
+  };
 
   useEffect(() => {
     if (!currentGame?.id) return;
@@ -157,14 +166,26 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
     setProfile(data);
   };
 
-  const handleCreateGame = async () => {
+  const handleCreateGame = async (makePublic: boolean = false) => {
     try {
-      const game = await gameHook.createGame();
+      const game = await gameHook.createGame(makePublic);
       setCurrentGame(game);
       setGameView("create");
       toast.success(`Game created! Code: ${game.join_code}`);
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const handleJoinPublicGame = async (game: any) => {
+    try {
+      await gameHook.joinGame(game.join_code);
+      setCurrentGame(game);
+      setGameView("create");
+      toast.success("Joined game successfully!");
+      loadPublicGames();
+    } catch (error: any) {
+      toast.error("Failed to join game");
     }
   };
 
@@ -331,13 +352,31 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
                 <CardTitle>Create Game</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Button onClick={handleCreateGame} className="w-full">
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {isPublicGame ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                    <Label htmlFor="public-toggle">
+                      {isPublicGame ? "Public Game" : "Private Game"}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="public-toggle"
+                    checked={isPublicGame}
+                    onCheckedChange={setIsPublicGame}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {isPublicGame 
+                    ? "Anyone can find and join this game from the public list" 
+                    : "Only players with the code can join"}
+                </p>
+                <Button onClick={() => handleCreateGame(isPublicGame)} className="w-full">
                   Create New Game
                 </Button>
               </CardContent>
@@ -363,6 +402,43 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
               </CardContent>
             </Card>
           </div>
+
+          {publicGames.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  Public Games
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {publicGames.map((game: any) => (
+                    <div 
+                      key={game.id} 
+                      className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {game.profiles?.name}'s Game
+                        </p>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {game.game_participants?.length || 0} player(s) waiting
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={() => handleJoinPublicGame(game)}
+                        size="sm"
+                      >
+                        Join
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
        </div>
      );
