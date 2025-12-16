@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
-        name: "The Passing Stone",
-        short_name: "Stone",
+        name: "Seek the Stone",
+        short_name: "Seek Stone",
         description: "A multiplayer stone passing game",
         theme_color: "#1a1a2e",
         background_color: "#1a1a2e",
