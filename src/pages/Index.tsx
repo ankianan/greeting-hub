@@ -318,7 +318,7 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
       <div className="min-h-screen bg-background p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold">The Passing Stone</h1>
+            <h1 className="text-4xl font-bold">Seek the Stone</h1>
             <div className="flex gap-2">
               <Button onClick={() => navigate("/history")} variant="outline">
                 <History className="w-4 h-4 mr-2" />
@@ -374,7 +374,7 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold">Join Game</h1>
-            <p className="text-muted-foreground mt-2">Enter the code to join the passing stone game.</p>
+            <p className="text-muted-foreground mt-2">Enter the code to join the Seek the Stone game.</p>
           </div>
 
           <Card>
@@ -562,7 +562,7 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">The Passing Stone</h1>
+          <h1 className="text-4xl font-bold mb-2">Seek the Stone</h1>
           <p className="text-2xl font-bold text-primary">
             Time: {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, "0")}
           </p>
