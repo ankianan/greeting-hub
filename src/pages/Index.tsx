@@ -47,6 +47,15 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
     setParticipants(data || []);
   }, []);
 
+  // Capture join code from URL before any redirect
+  useEffect(() => {
+    const codeFromUrl = searchParams.get("code");
+    if (codeFromUrl) {
+      sessionStorage.setItem("pendingJoinCode", codeFromUrl.toUpperCase());
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
@@ -57,15 +66,15 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
     if (user) {
       loadProfile();
       
-      // Check for join code in URL
-      const codeFromUrl = searchParams.get("code");
-      if (codeFromUrl) {
-        setJoinCode(codeFromUrl.toUpperCase());
-        setSearchParams({});
+      // Check for pending join code from URL
+      const pendingCode = sessionStorage.getItem("pendingJoinCode");
+      if (pendingCode) {
+        setJoinCode(pendingCode);
+        sessionStorage.removeItem("pendingJoinCode");
         setGameView("join");
       }
     }
-  }, [user, searchParams, setSearchParams]);
+  }, [user]);
 
   useEffect(() => {
     if (!currentGame?.id) return;
