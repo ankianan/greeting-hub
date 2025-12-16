@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { SwipeableStone } from "@/components/SwipeableStone";
 import { ParticipantList } from "@/components/ParticipantList";
 import { EducationScreen } from "@/components/EducationScreen";
-import { LogOut, History, Share2, Copy, Check } from "lucide-react";
+import { LogOut, History, Share2, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useGame } from "@/hooks/useGame";
 import { supabase } from "@/integrations/supabase/client";
@@ -364,6 +364,45 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
             </Card>
           </div>
         </div>
+       </div>
+     );
+   }
+
+  if (gameView === "join") {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold">Join Game</h1>
+            <p className="text-muted-foreground mt-2">Enter the code to join the passing stone game.</p>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Join with Code</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Join Code</Label>
+                <Input
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  placeholder="Enter code"
+                  maxLength={6}
+                  autoFocus
+                />
+              </div>
+
+              <Button onClick={handleJoinGame} className="w-full">
+                Join Game
+              </Button>
+
+              <Button onClick={() => setGameView("menu")} variant="outline" className="w-full">
+                Back
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -384,7 +423,8 @@ const [gameView, setGameView] = useState<"menu" | "create" | "join" | "education
                 <Button
                   variant="outline"
                   onClick={() => {
-                    const shareUrl = `${window.location.origin}?code=${currentGame?.join_code}`;
+                    const joinCodeToShare = currentGame?.join_code ?? "";
+                    const shareUrl = `${window.location.origin}${window.location.pathname}?code=${encodeURIComponent(joinCodeToShare)}`;
                     
                     if (navigator.share) {
                       navigator.share({
